@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GeoScale Pro — True Size Country Comparison Tool</title>
+
+    <!-- External Libraries -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+    <!-- App Styles -->
+    <link rel="stylesheet" href="styles.css">
+<base target="_blank">
+</head>
+<body>
+    <!-- Animated Background -->
+    <div class="bg-grid"></div>
+    <div class="bg-glow"></div>
+
+    <!-- Header -->
+    <header class="header">
+        <div class="logo">
+            <div class="logo-icon">🌍</div>
+            <div class="logo-text">Geo<span>Scale</span> <span class="logo-badge">PRO</span></div>
+        </div>
+        <div class="search-wrap">
+            <input type="text" class="search-input" id="searchInput" placeholder="Search 201+ countries, territories, regions..." autocomplete="off">
+            <span class="search-icon">🔍</span>
+            <div class="search-results" id="searchResults"></div>
+        </div>
+        <div class="header-tools">
+            <button class="tool-btn" id="btnDistortion" title="Toggle distortion heatmap (Ctrl+D)">
+                🌡️ Distortion
+            </button>
+            <button class="tool-btn" id="btnTissot" title="Show Tissot's indicatrix (Ctrl+T)">
+                ⭕ Tissot
+            </button>
+            <button class="tool-btn" id="btnAnimate" title="Animate latitude sweep (Ctrl+A)">
+                ▶️ Animate
+            </button>
+            <button class="tool-btn" id="btnShare" title="Share comparison">
+                🔗 Share
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Layout -->
+    <div class="main-layout">
+        <!-- Map Area -->
+        <div class="map-area">
+            <div id="map"></div>
+
+            <!-- Distortion Heatmap Legend -->
+            <div class="heatmap-legend" id="heatmapLegend">
+                <div class="legend-title">Area Distortion Factor</div>
+                <div class="legend-gradient"></div>
+                <div class="legend-labels">
+                    <span>1× (True)</span>
+                    <span>5×</span>
+                    <span>10×</span>
+                    <span>25×</span>
+                </div>
+            </div>
+
+            <!-- Live Metrics Panel -->
+            <div class="info-panel" id="infoPanel">
+                <div class="info-panel-title">
+                    <span class="live-dot"></span>
+                    Live Metrics
+                </div>
+                <div class="metric-row">
+                    <span class="metric-label">Cursor Position</span>
+                    <span class="metric-value" id="cursorPos">--°, --°</span>
+                </div>
+                <div class="metric-row">
+                    <span class="metric-label">Distortion Factor</span>
+                    <span class="metric-value" id="distortionFactor">1.00×</span>
+                </div>
+                <div class="metric-row">
+                    <span class="metric-label">Selected Country</span>
+                    <span class="metric-value highlight" id="selectedCountry">None</span>
+                </div>
+                <div class="metric-row">
+                    <span class="metric-label">True Area</span>
+                    <span class="metric-value" id="trueArea">--</span>
+                </div>
+                <div class="metric-row">
+                    <span class="metric-label">Map Appearance</span>
+                    <span class="metric-value warning" id="mapAppearance">--</span>
+                </div>
+            </div>
+
+            <!-- Projection Switcher -->
+            <div class="projection-switcher" id="projectionSwitcher">
+                <div class="switcher-title">Map Projection</div>
+                <div class="projection-option active" data-projection="mercator">
+                    <input type="radio" name="projection" id="proj-mercator" checked>
+                    <label for="proj-mercator">
+                        Mercator
+                        <div class="projection-desc">Preserves angles, distorts area</div>
+                    </label>
+                </div>
+                <div class="projection-option" data-projection="equalarea">
+                    <input type="radio" name="projection" id="proj-equalarea">
+                    <label for="proj-equalarea">
+                        Equal-Area
+                        <div class="projection-desc">True sizes, distorted shapes</div>
+                    </label>
+                </div>
+                <div class="projection-option" data-projection="mollweide">
+                    <input type="radio" name="projection" id="proj-mollweide">
+                    <label for="proj-mollweide">
+                        Mollweide
+                        <div class="projection-desc">Elliptical equal-area</div>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Tissot Panel -->
+            <div class="tissot-panel" id="tissotPanel">
+                <div class="switcher-title">Tissot's Indicatrix</div>
+                <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 8px;">
+                    Shows how a unit circle distorts at each latitude
+                </div>
+                <canvas class="tissot-canvas" id="tissotCanvas" width="200" height="120"></canvas>
+            </div>
+
+            <!-- Animation Controls -->
+            <div class="anim-controls" id="animControls" style="display: none;">
+                <button class="anim-btn" id="animPlay">▶</button>
+                <button class="anim-btn" id="animPause">⏸</button>
+                <input type="range" class="anim-slider" id="animSlider" min="-80" max="80" value="0">
+                <span class="anim-label" id="animLabel">0°</span>
+            </div>
+
+            <!-- Map Controls -->
+            <nav class="map-controls" aria-label="Map controls">
+                <button class="map-control-btn" id="btnZoomIn" title="Zoom in">+</button>
+                <button class="map-control-btn" id="btnZoomOut" title="Zoom out">−</button>
+                <button class="map-control-btn" id="btnReset" title="Reset view">⌂</button>
+                <button class="map-control-btn" id="btnClear" title="Clear all">🗑️</button>
+                <button class="map-control-btn" id="btnSidebar" title="Toggle sidebar">📊</button>
+            </nav>
+        </div>
+
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="sidebar-title">
+                    Comparison
+                    <span class="sidebar-count" id="sidebarCount">0</span>
+                </div>
+                <button class="sidebar-toggle" id="sidebarToggle">✕</button>
+            </div>
+            <div class="sidebar-content" id="sidebarContent">
+                <div class="empty-state">
+                    <div class="empty-state-icon">🗺️</div>
+                    <div class="empty-state-title">Start Exploring</div>
+                    <div class="empty-state-text">
+                        Search for countries above and drag them around the map to discover their true sizes.
+                    </div>
+                </div>
+            </div>
+            <div class="comparison-section" id="comparisonSection" style="display: none;">
+                <div class="comparison-title">Relative Size Comparison</div>
+                <div id="comparisonBars"></div>
+            </div>
+        </aside>
+    </div>
+
+    <!-- Share Modal -->
+    <div class="modal-overlay" id="shareModal">
+        <div class="modal">
+            <div class="modal-title">🔗 Share Comparison</div>
+            <div class="modal-text">
+                Copy this link to share your current comparison with others:
+            </div>
+            <input type="text" id="shareUrl" readonly style="width: 100%; padding: 12px; background: var(--bg-tertiary); border: 1px solid var(--border); border-radius: 10px; color: var(--text-primary); font-family: 'JetBrains Mono', monospace; font-size: 12px; margin-bottom: 16px; outline: none;">
+            <button class="modal-close" id="modalClose">Close</button>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
