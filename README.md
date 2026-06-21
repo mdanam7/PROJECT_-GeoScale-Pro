@@ -107,3 +107,18 @@ python -m http.server 8000
 npx serve .
 
 # Open http://localhost:8000
+| Control           | Action                      |
+| ----------------- | --------------------------- |
+| **Drag country**  | Move it anywhere on the map |
+| **Scroll**        | Zoom in/out                 |
+| **Click country** | Select it                   |
+| `Escape`          | Deselect / close modals     |
+| `Delete`          | Remove selected country     |
+| `Ctrl + D`        | Toggle distortion heatmap   |
+| `Ctrl + T`        | Toggle Tissot's indicatrix  |
+| `Ctrl + A`        | Toggle animation            |
+function calculateRadius(area, lat) {
+    const radiusMeters = Math.sqrt(area * 1,000,000 / π);
+    const correction = Math.cos(|lat| in radians);
+    return radiusMeters * Math.sqrt(correction);
+}
